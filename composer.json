@@ -1,0 +1,29 @@
+{
+    "name": "contabilflow/app",
+    "description": "ContábilFlow - gestão de guias e documentos contábeis (MVP)",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2",
+        "ext-pdo": "*",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "phpstan/phpstan": "^1.11",
+        "squizlabs/php_codesniffer": "^3.10"
+    },
+    "autoload": {
+        "psr-4": { "ContabilFlow\\": "src/" },
+        "files": ["src/Core/helpers.php"]
+    },
+    "autoload-dev": {
+        "psr-4": { "ContabilFlow\\Tests\\": "tests/" }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "lint": "phpcs",
+        "stan": "phpstan analyse --memory-limit=512M"
+    },
+    "config": { "sort-packages": true }
+}
