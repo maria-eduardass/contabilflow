@@ -13,6 +13,7 @@
             <a class="navbar-brand" href="/">ContábilFlow</a>
             <?php if (!empty($userName)): ?>
                 <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Painel</a></li>
                     <li class="nav-item"><a class="nav-link" href="/empresas">Empresas</a></li>
                     <li class="nav-item"><a class="nav-link" href="/obrigacoes">Guias</a></li>
                 </ul>

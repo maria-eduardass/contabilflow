@@ -13,6 +13,15 @@ interface ObrigacaoRepositoryInterface
     /** @return Page<Obrigacao> */
     public function search(ObrigacaoFiltro $filtro): Page;
 
+    /**
+     * Totais em uma única consulta agregada.
+     *
+     * @param array<string, FaixaVencimento> $faixas faixas de guias em aberto, por nome (ex.: a cor do semáforo)
+     * @param DateTimeImmutable $pagasDe início (inclusive) do período das pagas
+     * @param DateTimeImmutable $pagasAte fim (exclusivo) do período das pagas
+     */
+    public function resumo(array $faixas, DateTimeImmutable $pagasDe, DateTimeImmutable $pagasAte): ResumoObrigacoes;
+
     /** @throws DuplicateException já existe guia ativa da empresa para o tipo e a competência */
     public function create(ObrigacaoDados $dados, int $criadoPor): int;
 

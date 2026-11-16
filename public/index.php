@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use ContabilFlow\Controllers\AuthController;
+use ContabilFlow\Controllers\DashboardController;
 use ContabilFlow\Controllers\EmpresaController;
 use ContabilFlow\Controllers\ObrigacaoController;
 use ContabilFlow\Core\AuthMiddleware;
@@ -25,6 +26,7 @@ use ContabilFlow\Models\EmpresaRepository;
 use ContabilFlow\Models\ObrigacaoRepository;
 use ContabilFlow\Models\UsuarioRepository;
 use ContabilFlow\Services\AuthService;
+use ContabilFlow\Services\DashboardService;
 use ContabilFlow\Services\SemaforoService;
 use ContabilFlow\Validation\Validator;
 
@@ -83,8 +85,16 @@ $obrigacoes = new ObrigacaoController(
     $validator
 );
 
+$dashboard = new DashboardController(
+    new DashboardService($obrigacaoRepo, $semaforo),
+    $semaforo,
+    $view,
+    $session,
+    $csrf
+);
+
 $router = new Router();
-(require $root . '/config/routes.php')($router, $auth, $empresas, $obrigacoes);
+(require $root . '/config/routes.php')($router, $auth, $empresas, $obrigacoes, $dashboard);
 
 // Ordem importa: a sessão expira antes de o CSRF olhar o token, e o login é
 // exigido antes de checar o perfil. Caminhos restritos a admin ficam neste mapa.

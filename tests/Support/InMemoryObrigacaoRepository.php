@@ -6,6 +6,7 @@ namespace ContabilFlow\Tests\Support;
 
 use ContabilFlow\Models\ConflictException;
 use ContabilFlow\Models\DuplicateException;
+use ContabilFlow\Models\FaixaVencimento;
 use ContabilFlow\Models\InvalidStateException;
 use ContabilFlow\Models\Obrigacao;
 use ContabilFlow\Models\ObrigacaoDados;
@@ -14,6 +15,7 @@ use ContabilFlow\Models\ObrigacaoRepositoryInterface;
 use ContabilFlow\Models\ObrigacaoStatus;
 use ContabilFlow\Models\Page;
 use ContabilFlow\Models\RecordNotFoundException;
+use ContabilFlow\Models\ResumoObrigacoes;
 use ContabilFlow\Models\StaleVersionException;
 use DateTimeImmutable;
 
@@ -44,9 +46,44 @@ final class InMemoryObrigacaoRepository implements ObrigacaoRepositoryInterface
                 && ($filtro->tipo === null || $o->tipo === $filtro->tipo)
                 && ($filtro->status === null || $o->status === $filtro->status)
                 && ($filtro->q === null || stripos((string) $o->descricao . $o->empresaNome, $filtro->q) !== false)
+                && ($filtro->faixa === null || self::inRange($o, $filtro->faixa))
         ));
+        usort($items, static fn(Obrigacao $a, Obrigacao $b): int => $a->vencimento <=> $b->vencimento);
 
         return new Page($items, count($items), max(1, $filtro->page), ObrigacaoFiltro::PER_PAGE);
+    }
+
+    public function resumo(array $faixas, DateTimeImmutable $pagasDe, DateTimeImmutable $pagasAte): ResumoObrigacoes
+    {
+        $porCor = [];
+        foreach ($faixas as $name => $faixa) {
+            $porCor[$name] = count(array_filter(
+                $this->rows,
+                static fn(Obrigacao $o): bool => self::inRange($o, $faixa)
+            ));
+        }
+        $pagas = count(array_filter(
+            $this->rows,
+            static fn(Obrigacao $o): bool => $o->status === ObrigacaoStatus::Paga
+                && $o->pagaEm !== null && $o->pagaEm >= $pagasDe && $o->pagaEm < $pagasAte
+        ));
+        $valor = array_sum(array_map(
+            static fn(Obrigacao $o): float => $o->status->isActive() ? (float) $o->valor : 0.0,
+            $this->rows
+        ));
+
+        return new ResumoObrigacoes($porCor, $pagas, number_format($valor, 2, '.', ''));
+    }
+
+    private static function inRange(Obrigacao $o, FaixaVencimento $faixa): bool
+    {
+        if (!$faixa->emAberto) {
+            return !$o->status->isActive();
+        }
+
+        return $o->status->isActive()
+            && ($faixa->de === null || $o->vencimento >= $faixa->de)
+            && ($faixa->ate === null || $o->vencimento <= $faixa->ate);
     }
 
     public function create(ObrigacaoDados $dados, int $criadoPor): int

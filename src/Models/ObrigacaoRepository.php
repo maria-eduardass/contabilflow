@@ -78,6 +78,42 @@ final class ObrigacaoRepository implements ObrigacaoRepositoryInterface
         return new Page($items, $total, $page, ObrigacaoFiltro::PER_PAGE);
     }
 
+    /**
+     * Por quê: uma única consulta com SUM(CASE ...) em vez de uma por indicador.
+     * As faixas vêm do SemaforoService, então os números do painel batem com
+     * as cores e com os filtros da listagem.
+     */
+    public function resumo(array $faixas, DateTimeImmutable $pagasDe, DateTimeImmutable $pagasAte): ResumoObrigacoes
+    {
+        $columns = [];
+        $params = [];
+        foreach ($faixas as $name => $faixa) {
+            [$sql, $rangeParams] = $this->rangeCondition($faixa);
+            $columns[] = 'COALESCE(SUM(CASE WHEN ' . $sql . ' THEN 1 ELSE 0 END), 0) AS c' . count($columns);
+            array_push($params, ...$rangeParams);
+        }
+        $columns[] = "COALESCE(SUM(CASE WHEN o.status = 'paga' AND o.paga_em >= ? AND o.paga_em < ? "
+            . 'THEN 1 ELSE 0 END), 0) AS pagas';
+        array_push($params, $pagasDe->format(self::DATETIME), $pagasAte->format(self::DATETIME));
+        $columns[] = 'COALESCE(SUM(CASE WHEN ' . self::ACTIVE . ' THEN o.valor END), 0) AS valor_aberto';
+
+        $stmt = $this->db->pdo()->prepare('SELECT ' . implode(', ', $columns) . ' FROM obrigacoes o');
+        $stmt->execute($params);
+        $row = (array) $stmt->fetch();
+
+        $porCor = [];
+        $i = 0;
+        foreach (array_keys($faixas) as $name) {
+            $porCor[$name] = (int) $row['c' . $i++];
+        }
+
+        return new ResumoObrigacoes(
+            $porCor,
+            (int) $row['pagas'],
+            number_format((float) $row['valor_aberto'], 2, '.', '')
+        );
+    }
+
     public function create(ObrigacaoDados $dados, int $criadoPor): int
     {
         $pdo = $this->db->pdo();

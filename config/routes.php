@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use ContabilFlow\Controllers\AuthController;
+use ContabilFlow\Controllers\DashboardController;
 use ContabilFlow\Controllers\EmpresaController;
 use ContabilFlow\Controllers\ObrigacaoController;
 use ContabilFlow\Core\Response;
@@ -15,9 +16,12 @@ return static function (
     Router $router,
     AuthController $auth,
     EmpresaController $empresas,
-    ObrigacaoController $obrigacoes
+    ObrigacaoController $obrigacoes,
+    DashboardController $dashboard
 ): void {
-    $router->get('/', static fn() => Response::redirect('/empresas'));
+    $router->get('/', $dashboard->index(...));
+    $router->get('/dashboard', static fn() => Response::redirect('/'));
+    $router->get('/api/dashboard/indicadores', $dashboard->indicadores(...));
 
     $router->get('/login', $auth->showLogin(...));
     $router->post('/login', $auth->login(...));
