@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use ContabilFlow\Controllers\AuthController;
+use ContabilFlow\Controllers\AvaliacaoController;
 use ContabilFlow\Controllers\DashboardController;
 use ContabilFlow\Controllers\EmpresaController;
 use ContabilFlow\Controllers\LembreteController;
@@ -21,7 +22,8 @@ return static function (
     ObrigacaoController $obrigacoes,
     DashboardController $dashboard,
     LembreteController $lembretes,
-    UsuarioController $usuarios
+    UsuarioController $usuarios,
+    AvaliacaoController $avaliacoes
 ): void {
     $router->get('/', $dashboard->index(...));
     $router->get('/dashboard', static fn() => Response::redirect('/'));
@@ -52,6 +54,10 @@ return static function (
     $router->get('/usuarios/novo', $usuarios->create(...));
     $router->post('/usuarios', $usuarios->store(...));
     $router->patch('/usuarios/{id:[0-9]+}/ativo', $usuarios->toggleActive(...));
+
+    $router->get('/avaliacao', $avaliacoes->form(...));
+    $router->post('/avaliacao', $avaliacoes->store(...));
+    $router->get('/avaliacoes/resumo', $avaliacoes->resumo(...));
 
     $router->get('/api/obrigacoes/{id:[0-9]+}/lembrete', $lembretes->preview(...));
     $router->post('/api/obrigacoes/{id:[0-9]+}/lembretes', $lembretes->registrar(...));

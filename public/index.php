@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use ContabilFlow\Controllers\AuthController;
+use ContabilFlow\Controllers\AvaliacaoController;
 use ContabilFlow\Controllers\DashboardController;
 use ContabilFlow\Controllers\EmpresaController;
 use ContabilFlow\Controllers\LembreteController;
@@ -24,6 +25,7 @@ use ContabilFlow\Core\Session;
 use ContabilFlow\Core\SessionMiddleware;
 use ContabilFlow\Core\SystemClock;
 use ContabilFlow\Core\View;
+use ContabilFlow\Models\AvaliacaoRepository;
 use ContabilFlow\Models\EmpresaRepository;
 use ContabilFlow\Models\LembreteRepository;
 use ContabilFlow\Models\ObrigacaoRepository;
@@ -111,6 +113,15 @@ $lembretesApi = new LembreteController(
 
 $usuariosAdmin = new UsuarioController($users, $view, $session, $csrf, $validator);
 
+$avaliacoesCtl = new AvaliacaoController(
+    new AvaliacaoRepository($db),
+    $clock,
+    $view,
+    $session,
+    $csrf,
+    $validator
+);
+
 $router = new Router();
 (require $root . '/config/routes.php')(
     $router,
@@ -119,7 +130,8 @@ $router = new Router();
     $obrigacoes,
     $dashboard,
     $lembretesApi,
-    $usuariosAdmin
+    $usuariosAdmin,
+    $avaliacoesCtl
 );
 
 // Ordem importa: a sessão expira antes de o CSRF olhar o token, e o login é

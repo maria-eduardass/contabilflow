@@ -20,6 +20,7 @@ use LogicException;
  * - Para cada campo vale o PRIMEIRO erro; os demais só confundiriam o usuário.
  * - Campo opcional vazio pula as outras regras e vira null (NULL no banco).
  * - Regra desconhecida lança LogicException: é erro de programação, não de usuário.
+ * - Texto que não é UTF-8 válido é recusado (422) antes de chegar ao banco.
  */
 final class Validator
 {
@@ -38,6 +39,12 @@ final class Validator
             $raw = $input[$field] ?? null;
             if ($raw !== null && !is_scalar($raw)) {
                 $errors[$field] = 'Valor inválido';
+                continue;
+            }
+
+            // Bytes fora de UTF-8 nunca chegam ao banco: no modo estrito ele recusaria (erro 500).
+            if (!mb_check_encoding((string) $raw, 'UTF-8')) {
+                $errors[$field] = 'Texto com caracteres inválidos';
                 continue;
             }
 

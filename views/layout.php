@@ -18,7 +18,9 @@
                     <li class="nav-item"><a class="nav-link" href="/obrigacoes">Guias</a></li>
                     <?php if (!empty($isAdmin)): ?>
                         <li class="nav-item"><a class="nav-link" href="/usuarios">Usuários</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/avaliacoes/resumo">Resultados</a></li>
                     <?php endif; ?>
+                    <li class="nav-item"><a class="nav-link" href="/avaliacao">Avaliação</a></li>
                 </ul>
                 <form method="post" action="/logout" class="d-flex align-items-center gap-2">
                     <?= $csrfField ?? '' ?>
