@@ -5,6 +5,7 @@
  * @var list<array{status: string, label: string, class: string, confirm: string|null}> $acoes
  * @var string|null $message
  * @var string $csrfField
+ * @var list<\ContabilFlow\Models\Lembrete> $lembretes
  */
 use ContabilFlow\Models\ObrigacaoStatus;
 
@@ -66,5 +67,67 @@ $paga = $obrigacao->status === ObrigacaoStatus::Paga;
                 </form>
             <?php endif; ?>
         </div>
+
+        <?php if ($obrigacao->status->isActive()): ?>
+            <div class="card shadow-sm mt-3">
+                <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <div class="fw-semibold">Lembrete para o cliente</div>
+                        <div class="text-muted small">Gera a mensagem pronta para enviar por WhatsApp, e-mail ou copiar.</div>
+                    </div>
+                    <button type="button" class="btn btn-success" data-lembrete-abrir
+                            data-preview-url="/api/obrigacoes/<?= e($obrigacao->id) ?>/lembrete"
+                            data-registro-url="/api/obrigacoes/<?= e($obrigacao->id) ?>/lembretes">Gerar lembrete</button>
+                </div>
+            </div>
+
+            <div class="modal fade" id="lembrete-modal" tabindex="-1" aria-labelledby="lembrete-titulo" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title h5" id="lembrete-titulo">Lembrete para o cliente</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-danger d-none" role="alert" data-lembrete-erro></div>
+                            <div class="mb-2"><span class="badge" data-lembrete-badge></span></div>
+                            <label for="lembrete-texto" class="form-label">Mensagem (você pode editar antes de enviar)</label>
+                            <textarea id="lembrete-texto" class="form-control" rows="10" maxlength="2000" data-lembrete-texto></textarea>
+                            <div class="form-text text-success d-none" data-lembrete-ok>Envio registrado no histórico da guia.</div>
+                        </div>
+                        <div class="modal-footer flex-wrap justify-content-start">
+                            <button type="button" class="btn btn-outline-secondary" data-lembrete-canal="copiado">Copiar texto</button>
+                            <a class="btn btn-success disabled" href="#" target="_blank" rel="noopener noreferrer"
+                               aria-disabled="true" tabindex="-1" data-lembrete-canal="whatsapp">Abrir WhatsApp</a>
+                            <a class="btn btn-primary disabled" href="#" aria-disabled="true" tabindex="-1"
+                               data-lembrete-canal="email">Abrir e-mail</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <h2 class="h5 mt-4 mb-2">Histórico de lembretes</h2>
+        <?php if ($lembretes === []): ?>
+            <div class="card card-body text-center text-muted">Nenhum lembrete gerado para esta guia.</div>
+        <?php else: ?>
+            <div class="card shadow-sm">
+                <ul class="list-group list-group-flush">
+                    <?php foreach ($lembretes as $lembrete): ?>
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <span><span class="badge text-bg-light border"><?= e($lembrete->canal->label()) ?></span>
+                                    por <?= e($lembrete->usuarioNome) ?></span>
+                                <span class="text-muted small"><?= e(date_br($lembrete->criadoEm, 'd/m/Y H:i')) ?></span>
+                            </div>
+                            <details class="mt-1">
+                                <summary class="small text-muted">Ver mensagem</summary>
+                                <div class="small mt-1"><?= nl2br(e($lembrete->mensagem)) ?></div>
+                            </details>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
     </div>
 </div>

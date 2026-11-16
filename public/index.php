@@ -5,6 +5,7 @@ declare(strict_types=1);
 use ContabilFlow\Controllers\AuthController;
 use ContabilFlow\Controllers\DashboardController;
 use ContabilFlow\Controllers\EmpresaController;
+use ContabilFlow\Controllers\LembreteController;
 use ContabilFlow\Controllers\ObrigacaoController;
 use ContabilFlow\Core\AuthMiddleware;
 use ContabilFlow\Core\Csrf;
@@ -23,10 +24,12 @@ use ContabilFlow\Core\SessionMiddleware;
 use ContabilFlow\Core\SystemClock;
 use ContabilFlow\Core\View;
 use ContabilFlow\Models\EmpresaRepository;
+use ContabilFlow\Models\LembreteRepository;
 use ContabilFlow\Models\ObrigacaoRepository;
 use ContabilFlow\Models\UsuarioRepository;
 use ContabilFlow\Services\AuthService;
 use ContabilFlow\Services\DashboardService;
+use ContabilFlow\Services\LembreteService;
 use ContabilFlow\Services\SemaforoService;
 use ContabilFlow\Validation\Validator;
 
@@ -63,6 +66,7 @@ $auth = new AuthController(
 $empresaRepo = new EmpresaRepository($db);
 $obrigacaoRepo = new ObrigacaoRepository($db);
 $semaforo = new SemaforoService($clock);
+$lembreteRepo = new LembreteRepository($db);
 
 $empresas = new EmpresaController(
     $empresaRepo,
@@ -82,7 +86,8 @@ $obrigacoes = new ObrigacaoController(
     $view,
     $session,
     $csrf,
-    $validator
+    $validator,
+    $lembreteRepo
 );
 
 $dashboard = new DashboardController(
@@ -93,8 +98,18 @@ $dashboard = new DashboardController(
     $csrf
 );
 
+$lembretesApi = new LembreteController(
+    $obrigacaoRepo,
+    $empresaRepo,
+    $lembreteRepo,
+    new LembreteService($semaforo),
+    $clock,
+    $session,
+    $validator
+);
+
 $router = new Router();
-(require $root . '/config/routes.php')($router, $auth, $empresas, $obrigacoes, $dashboard);
+(require $root . '/config/routes.php')($router, $auth, $empresas, $obrigacoes, $dashboard, $lembretesApi);
 
 // Ordem importa: a sessão expira antes de o CSRF olhar o token, e o login é
 // exigido antes de checar o perfil. Caminhos restritos a admin ficam neste mapa.

@@ -2,6 +2,12 @@
 <ruleset name="ContabilFlow">
     <description>PSR-12</description>
     <rule ref="PSR12"/>
+    <!-- Só PHP: o JavaScript em public/assets não segue PSR-12. -->
+    <arg name="extensions" value="php"/>
+    <!-- Nos testes, linhas longas de dados e fixtures são aceitas; em src/ o limite continua valendo. -->
+    <rule ref="Generic.Files.LineLength">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
     <file>src</file>
     <file>public</file>
     <file>config</file>

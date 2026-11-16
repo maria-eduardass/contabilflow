@@ -36,7 +36,10 @@ final class Seeder
     ];
 
     private const EMPRESAS = [
-        ['Padaria Pão Quente Ltda', 'Pão Quente', '11222333000181', 'simples', 'contato@paoquente.example', '5511987654321'],
+        [
+            'Padaria Pão Quente Ltda', 'Pão Quente', '11222333000181', 'simples',
+            'contato@paoquente.example', '5511987654321',
+        ],
         ['Oficina Mecânica Silva ME', null, '11444777000161', 'mei', 'silva@oficina.example', '5521998765432'],
         ['Tech Soluções S.A.', 'TechSol', '45723174000110', 'presumido', null, null],
     ];
@@ -72,7 +75,8 @@ final class Seeder
         }
 
         $stmt = $this->pdo->prepare(
-            'INSERT INTO obrigacoes (empresa_id, tipo, descricao, competencia, vencimento, valor, status, paga_em, criado_por) '
+            'INSERT INTO obrigacoes (empresa_id, tipo, descricao, competencia, vencimento, valor, status, '
+            . 'paga_em, criado_por) '
             . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         foreach (self::OBRIGACOES as $i => [$empresaIdx, $tipo, $days, $status, $descricao]) {

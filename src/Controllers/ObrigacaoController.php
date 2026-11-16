@@ -14,6 +14,7 @@ use ContabilFlow\Models\ConflictException;
 use ContabilFlow\Models\DuplicateException;
 use ContabilFlow\Models\EmpresaRepositoryInterface;
 use ContabilFlow\Models\InvalidStateException;
+use ContabilFlow\Models\LembreteRepositoryInterface;
 use ContabilFlow\Models\Obrigacao;
 use ContabilFlow\Models\ObrigacaoDados;
 use ContabilFlow\Models\ObrigacaoFiltro;
@@ -63,6 +64,7 @@ final class ObrigacaoController
         private Session $session,
         private Csrf $csrf,
         private Validator $validator,
+        private LembreteRepositoryInterface $lembretes,
     ) {
     }
 
@@ -457,6 +459,7 @@ final class ObrigacaoController
             'cor' => $this->semaforo->classificar($o),
             'acoes' => $acoes,
             'message' => null,
+            'lembretes' => $this->lembretes->listByObrigacao($o->id),
         ];
     }
 

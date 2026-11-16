@@ -14,6 +14,7 @@ use ContabilFlow\Models\ObrigacaoStatus;
 use ContabilFlow\Services\SemaforoService;
 use ContabilFlow\Tests\Support\FixedClock;
 use ContabilFlow\Tests\Support\InMemoryEmpresaRepository;
+use ContabilFlow\Tests\Support\InMemoryLembreteRepository;
 use ContabilFlow\Tests\Support\InMemoryObrigacaoRepository;
 use ContabilFlow\Validation\Validator;
 use DateTimeImmutable;
@@ -27,6 +28,7 @@ final class ObrigacaoControllerTest extends TestCase
     private Session $session;
     private InMemoryEmpresaRepository $empresas;
     private InMemoryObrigacaoRepository $guias;
+    private InMemoryLembreteRepository $lembretes;
     private ObrigacaoController $controller;
     private int $empresa;
 
@@ -35,6 +37,7 @@ final class ObrigacaoControllerTest extends TestCase
         $this->session = new Session($this->sessionData);
         $this->empresas = new InMemoryEmpresaRepository();
         $this->guias = new InMemoryObrigacaoRepository($this->empresas);
+        $this->lembretes = new InMemoryLembreteRepository();
         $this->empresa = $this->empresas->seed('Padaria Alfa', '11222333000181');
         $clock = new FixedClock(new DateTimeImmutable('2026-11-16 10:00:00'));
 
@@ -46,7 +49,8 @@ final class ObrigacaoControllerTest extends TestCase
             new View(__DIR__ . '/../../views'),
             $this->session,
             new Csrf($this->session),
-            new Validator()
+            new Validator(),
+            $this->lembretes
         );
     }
 
@@ -391,6 +395,62 @@ final class ObrigacaoControllerTest extends TestCase
     public function testShowUnknownGuideReturns404(): void
     {
         $this->assertSame(404, $this->controller->show(Request::create('GET', '/x'), ['id' => '9'])->status);
+    }
+
+    // ---------- lembretes na tela de detalhe ----------
+
+    public function testShowOfActiveGuideOffersTheReminderButtonAndModal(): void
+    {
+        $id = $this->guias->seed($this->empresa);
+
+        $body = $this->controller->show(Request::create('GET', '/x'), ['id' => (string) $id])->body;
+
+        $this->assertStringContainsString('data-lembrete-abrir', $body);
+        $this->assertStringContainsString('data-preview-url="/api/obrigacoes/' . $id . '/lembrete"', $body);
+        $this->assertStringContainsString('data-registro-url="/api/obrigacoes/' . $id . '/lembretes"', $body);
+        $this->assertStringContainsString('id="lembrete-modal"', $body);
+        $this->assertStringContainsString('Copiar texto', $body);
+        $this->assertStringContainsString('Abrir WhatsApp', $body);
+        $this->assertStringContainsString('Abrir e-mail', $body);
+    }
+
+    public function testShowOfPaidOrCancelledGuideHasNoReminderButton(): void
+    {
+        $paga = $this->guias->seed($this->empresa, 'DAS', '2026-10-01', '2026-11-10', ObrigacaoStatus::Paga);
+        $cancelada = $this->guias->seed($this->empresa, 'DARF', '2026-10-01', '2026-11-10', ObrigacaoStatus::Cancelada);
+
+        foreach ([$paga, $cancelada] as $id) {
+            $body = $this->controller->show(Request::create('GET', '/x'), ['id' => (string) $id])->body;
+
+            $this->assertStringNotContainsString('data-lembrete-abrir', $body);
+            $this->assertStringNotContainsString('lembrete-modal', $body);
+        }
+    }
+
+    public function testShowListsTheReminderHistoryNewestFirstWithEscapedMessages(): void
+    {
+        $id = $this->guias->seed($this->empresa);
+        $this->lembretes->create($id, 1, \ContabilFlow\Models\LembreteCanal::Copiado, 'primeira', new DateTimeImmutable('2026-11-14 09:00:00'));
+        $this->lembretes->create($id, 1, \ContabilFlow\Models\LembreteCanal::Whatsapp, '<script>alert(1)</script>', new DateTimeImmutable('2026-11-15 10:30:00'));
+
+        $body = $this->controller->show(Request::create('GET', '/x'), ['id' => (string) $id])->body;
+
+        $this->assertStringContainsString('Histórico de lembretes', $body);
+        $this->assertStringContainsString('WhatsApp', $body);
+        $this->assertStringContainsString('Texto copiado', $body);
+        $this->assertStringContainsString('15/11/2026 10:30', $body);
+        $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $body);
+        $this->assertStringNotContainsString('<script>alert(1)', $body);
+        $this->assertLessThan(strpos($body, 'primeira'), strpos($body, '15/11/2026 10:30'));
+    }
+
+    public function testShowWithoutRemindersShowsEmptyHistory(): void
+    {
+        $id = $this->guias->seed($this->empresa);
+
+        $body = $this->controller->show(Request::create('GET', '/x'), ['id' => (string) $id])->body;
+
+        $this->assertStringContainsString('Nenhum lembrete gerado para esta guia', $body);
     }
 
     // ---------- editar ----------

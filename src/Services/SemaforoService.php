@@ -83,7 +83,7 @@ final class SemaforoService
         };
     }
 
-    private static function diasAte(DateTimeImmutable $vencimento, DateTimeImmutable $hoje): int
+    public static function diasAte(DateTimeImmutable $vencimento, DateTimeImmutable $hoje): int
     {
         $utc = new DateTimeZone('UTC');
         $due = new DateTimeImmutable($vencimento->format('Y-m-d'), $utc);
