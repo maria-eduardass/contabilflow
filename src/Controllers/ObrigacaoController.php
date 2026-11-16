@@ -480,6 +480,7 @@ final class ObrigacaoController
         return Response::html($this->view->render($template, $data + [
             'csrfField' => $this->csrf->field(),
             'userName' => (string) $this->session->get('nome', ''),
+            'isAdmin' => $this->session->get('perfil') === 'admin',
             'flash' => $this->session->pullFlash(),
         ]), $status);
     }

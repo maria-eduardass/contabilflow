@@ -17,6 +17,7 @@ final class Usuario
         public readonly bool $ativo,
         public readonly int $tentativasFalhas,
         public readonly ?DateTimeImmutable $bloqueadoAte,
+        public readonly ?DateTimeImmutable $criadoEm = null,
     ) {
     }
 

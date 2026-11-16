@@ -35,6 +35,7 @@ final class DashboardController
             'cor' => fn(Obrigacao $o): Semaforo => $this->semaforo->classificar($o),
             'csrfField' => $this->csrf->field(),
             'userName' => (string) $this->session->get('nome', ''),
+            'isAdmin' => $this->session->get('perfil') === 'admin',
             'flash' => $this->session->pullFlash(),
         ]));
     }

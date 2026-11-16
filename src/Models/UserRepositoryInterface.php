@@ -17,6 +17,21 @@ interface UserRepositoryInterface
 
     public function updatePasswordHash(int $userId, string $hash): void;
 
+    public function find(int $id): ?Usuario;
+
+    /**
+     * Usuários por nome, 20 por página.
+     *
+     * @return Page<Usuario>
+     */
+    public function listPage(int $page): Page;
+
+    /** @throws DuplicateException e-mail já cadastrado */
+    public function create(string $nome, string $email, string $senhaHash, string $perfil): int;
+
+    /** @return bool false se o usuário não existe */
+    public function setActive(int $id, bool $ativo): bool;
+
     /** @return list<array{id: int, nome: string}> usuários ativos, por nome (opções de responsável) */
     public function listActive(): array;
 }

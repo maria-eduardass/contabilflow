@@ -11,7 +11,7 @@ use LogicException;
 /**
  * Validação no servidor, campo a campo.
  *
- * Regras: required, email, maxLength:N, in:a,b,c, date, month (AAAA-MM, devolve
+ * Regras: required, email, minLength:N, maxLength:N, in:a,b,c, date, month (AAAA-MM, devolve
  * o dia 01 como AAAA-MM-01), decimal:casas[,inteiros], cnpj, whatsapp.
  *
  * Por quê:
@@ -69,6 +69,9 @@ final class Validator
             'email' => filter_var($value, FILTER_VALIDATE_EMAIL) !== false
                 ? [null, strtolower($value)]
                 : ['E-mail inválido', $value],
+            'minLength' => mb_strlen($value) >= (int) $arg
+                ? [null, $value]
+                : ["Mínimo de {$arg} caracteres", $value],
             'maxLength' => mb_strlen($value) <= (int) $arg
                 ? [null, $value]
                 : ["Máximo de {$arg} caracteres", $value],

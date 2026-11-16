@@ -16,6 +16,9 @@
                     <li class="nav-item"><a class="nav-link" href="/">Painel</a></li>
                     <li class="nav-item"><a class="nav-link" href="/empresas">Empresas</a></li>
                     <li class="nav-item"><a class="nav-link" href="/obrigacoes">Guias</a></li>
+                    <?php if (!empty($isAdmin)): ?>
+                        <li class="nav-item"><a class="nav-link" href="/usuarios">Usuários</a></li>
+                    <?php endif; ?>
                 </ul>
                 <form method="post" action="/logout" class="d-flex align-items-center gap-2">
                     <?= $csrfField ?? '' ?>

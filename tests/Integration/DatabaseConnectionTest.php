@@ -46,6 +46,24 @@ final class DatabaseConnectionTest extends TestCase
         $this->assertSame('utf8mb4', $row['c']);
     }
 
+    public function testStrictSqlModeIsEnabledOnEveryConnection(): void
+    {
+        $stmt = $this->pdo->query('SELECT @@SESSION.sql_mode AS m');
+        $this->assertNotFalse($stmt);
+        $row = $stmt->fetch();
+        $this->assertIsArray($row);
+
+        $this->assertStringContainsString('STRICT_ALL_TABLES', (string) $row['m']);
+    }
+
+    public function testStrictModeRejectsValuesTooLongInsteadOfTruncatingThem(): void
+    {
+        $this->pdo->exec('CREATE TEMPORARY TABLE strict_probe (c VARCHAR(3) NOT NULL)');
+
+        $this->expectException(PDOException::class);
+        $this->pdo->prepare('INSERT INTO strict_probe (c) VALUES (?)')->execute(['texto longo demais']);
+    }
+
     public function testErrorsThrowExceptions(): void
     {
         $this->expectException(PDOException::class);

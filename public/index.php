@@ -6,6 +6,7 @@ use ContabilFlow\Controllers\AuthController;
 use ContabilFlow\Controllers\DashboardController;
 use ContabilFlow\Controllers\EmpresaController;
 use ContabilFlow\Controllers\LembreteController;
+use ContabilFlow\Controllers\UsuarioController;
 use ContabilFlow\Controllers\ObrigacaoController;
 use ContabilFlow\Core\AuthMiddleware;
 use ContabilFlow\Core\Csrf;
@@ -108,8 +109,18 @@ $lembretesApi = new LembreteController(
     $validator
 );
 
+$usuariosAdmin = new UsuarioController($users, $view, $session, $csrf, $validator);
+
 $router = new Router();
-(require $root . '/config/routes.php')($router, $auth, $empresas, $obrigacoes, $dashboard, $lembretesApi);
+(require $root . '/config/routes.php')(
+    $router,
+    $auth,
+    $empresas,
+    $obrigacoes,
+    $dashboard,
+    $lembretesApi,
+    $usuariosAdmin
+);
 
 // Ordem importa: a sessão expira antes de o CSRF olhar o token, e o login é
 // exigido antes de checar o perfil. Caminhos restritos a admin ficam neste mapa.
@@ -120,7 +131,7 @@ $kernel = new Kernel(
     [
         new SessionMiddleware($session),
         new CsrfMiddleware($csrf),
-        new AuthMiddleware($session, ['/login']),
+        new AuthMiddleware($session, ['/login'], $users),
         new RoleMiddleware($session, ['/usuarios' => $adminOnly, '/avaliacoes/resumo' => $adminOnly]),
     ]
 );

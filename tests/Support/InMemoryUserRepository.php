@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ContabilFlow\Tests\Support;
 
+use ContabilFlow\Models\DuplicateException;
+use ContabilFlow\Models\Page;
 use ContabilFlow\Models\UserRepositoryInterface;
 use ContabilFlow\Models\Usuario;
 use DateTimeImmutable;
@@ -62,6 +64,56 @@ final class InMemoryUserRepository implements UserRepositoryInterface
         $this->writes[] = 'reset:' . $userId;
         $this->rows[$userId]['falhas'] = 0;
         $this->rows[$userId]['ate'] = null;
+    }
+
+    public function find(int $id): ?Usuario
+    {
+        $r = $this->rows[$id] ?? null;
+
+        return $r === null ? null : $this->toUsuario($id, $r);
+    }
+
+    public function listPage(int $page): Page
+    {
+        $all = [];
+        foreach ($this->rows as $id => $r) {
+            $all[] = $this->toUsuario($id, $r);
+        }
+        $page = max(1, $page);
+
+        return new Page(array_slice($all, ($page - 1) * 20, 20), count($all), $page, 20);
+    }
+
+    public function create(string $nome, string $email, string $senhaHash, string $perfil): int
+    {
+        foreach ($this->rows as $r) {
+            if ($r['email'] === $email) {
+                throw new DuplicateException('email');
+            }
+        }
+        $id = ($this->rows === [] ? 0 : max(array_keys($this->rows))) + 1;
+        $this->add($id, $email, $senhaHash, $perfil);
+        $this->rows[$id]['nome'] = $nome;
+        $this->writes[] = 'create:' . $id;
+
+        return $id;
+    }
+
+    public function setActive(int $id, bool $ativo): bool
+    {
+        if (!isset($this->rows[$id])) {
+            return false;
+        }
+        $this->rows[$id]['ativo'] = $ativo;
+        $this->writes[] = ($ativo ? 'activate:' : 'deactivate:') . $id;
+
+        return true;
+    }
+
+    /** @param array{nome: string, email: string, hash: string, perfil: string, ativo: bool, falhas: int, ate: ?DateTimeImmutable} $r */
+    private function toUsuario(int $id, array $r): Usuario
+    {
+        return new Usuario($id, $r['nome'], $r['email'], $r['hash'], $r['perfil'], $r['ativo'], $r['falhas'], $r['ate']);
     }
 
     public function listActive(): array

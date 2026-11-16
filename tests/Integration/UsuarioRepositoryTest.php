@@ -6,6 +6,7 @@ namespace ContabilFlow\Tests\Integration;
 
 use ContabilFlow\Core\LazyPdo;
 use ContabilFlow\Core\Migrator;
+use ContabilFlow\Models\DuplicateException;
 use ContabilFlow\Models\UsuarioRepository;
 use ContabilFlow\Tests\Support\TestDatabase;
 use DateTimeImmutable;
@@ -110,6 +111,88 @@ final class UsuarioRepositoryTest extends TestCase
             [['id' => $this->id, 'nome' => 'Ana'], ['id' => $this->id + 1, 'nome' => 'Bia']],
             $this->repo->listActive()
         );
+    }
+
+    public function testFindByIdReturnsUserWithCreationDate(): void
+    {
+        $user = $this->repo->find($this->id);
+
+        $this->assertNotNull($user);
+        $this->assertSame('Ana', $user->nome);
+        $this->assertSame('ana@escritorio.com', $user->email);
+        $this->assertNotNull($user->criadoEm);
+        $this->assertNull($this->repo->find($this->id + 100));
+    }
+
+    public function testCreateStoresUserActiveWithHashAndProfile(): void
+    {
+        $id = $this->repo->create('Carla', 'carla@x.com', password_hash('segredo-123456', PASSWORD_DEFAULT), 'contador');
+
+        $user = $this->repo->find($id);
+        $this->assertNotNull($user);
+        $this->assertSame('Carla', $user->nome);
+        $this->assertSame('contador', $user->perfil);
+        $this->assertTrue($user->ativo);
+        $this->assertSame(0, $user->tentativasFalhas);
+        $this->assertTrue(password_verify('segredo-123456', $user->senhaHash));
+        $this->assertSame($id, $this->repo->findByEmail('carla@x.com')?->id);
+    }
+
+    public function testCreateWithDuplicateEmailThrowsDuplicateOnEmailField(): void
+    {
+        try {
+            $this->repo->create('Outra Ana', 'ana@escritorio.com', 'h', 'contador');
+            $this->fail('Deveria lançar DuplicateException');
+        } catch (DuplicateException $e) {
+            $this->assertSame('email', $e->field);
+        }
+        $this->assertCount(1, $this->repo->listPage(1)->items);
+    }
+
+    public function testCreateRejectsAnUnknownProfileAtTheDatabaseLevel(): void
+    {
+        $this->expectException(\PDOException::class);
+        $this->repo->create('Cliente', 'cliente@x.com', 'h', 'cliente');
+    }
+
+    public function testSetActiveTogglesAndReportsExistence(): void
+    {
+        $this->assertTrue($this->repo->setActive($this->id, false));
+        $this->assertFalse($this->repo->find($this->id)?->ativo);
+
+        $this->assertTrue($this->repo->setActive($this->id, false)); // já estava inativo: continua "existe"
+        $this->assertTrue($this->repo->setActive($this->id, true));
+        $this->assertTrue($this->repo->find($this->id)?->ativo);
+        $this->assertFalse($this->repo->setActive($this->id + 100, true));
+    }
+
+    public function testListPageOrdersActiveFirstThenByNameAndPaginates(): void
+    {
+        $this->repo->create('Zeca', 'zeca@x.com', 'h', 'contador');
+        $inativo = $this->repo->create('Abel', 'abel@x.com', 'h', 'contador');
+        $this->repo->setActive($inativo, false);
+
+        $names = array_map(static fn($u): string => $u->nome, $this->repo->listPage(1)->items);
+
+        $this->assertSame(['Ana', 'Zeca', 'Abel'], $names);
+        $this->assertSame(3, $this->repo->listPage(1)->total);
+    }
+
+    public function testListPagePaginatesAtTwentyPerPage(): void
+    {
+        for ($i = 1; $i <= 24; $i++) {
+            $this->repo->create(sprintf('Usuario %02d', $i), "u{$i}@x.com", 'h', 'contador');
+        }
+
+        $first = $this->repo->listPage(1);
+        $second = $this->repo->listPage(2);
+
+        $this->assertSame(25, $first->total);
+        $this->assertCount(20, $first->items);
+        $this->assertCount(5, $second->items);
+        $this->assertSame(2, $first->pages());
+        $this->assertSame([], $this->repo->listPage(9)->items);
+        $this->assertCount(20, $this->repo->listPage(0)->items);
     }
 
     public function testUpdatePasswordHash(): void
