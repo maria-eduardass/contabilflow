@@ -13,7 +13,7 @@ namespace ContabilFlow\Core;
  */
 final class Router
 {
-    /** @var list<array{method: string, regex: string, handler: callable}> */
+    /** @var list<array{method: string, pattern: string, regex: string, handler: callable}> */
     private array $routes = [];
 
     /** @param callable(Request, array<string, string>): Response $handler */
@@ -27,7 +27,12 @@ final class Router
             $pattern
         );
 
-        $this->routes[] = ['method' => strtoupper($method), 'regex' => '#^' . $regex . '$#', 'handler' => $handler];
+        $this->routes[] = [
+            'method' => strtoupper($method),
+            'pattern' => $pattern,
+            'regex' => '#^' . $regex . '$#',
+            'handler' => $handler,
+        ];
     }
 
     /** @param callable(Request, array<string, string>): Response $handler */
@@ -58,6 +63,19 @@ final class Router
     public function delete(string $pattern, callable $handler): void
     {
         $this->add('DELETE', $pattern, $handler);
+    }
+
+    /**
+     * Rotas registradas, na ordem. Serve para testes e documentação conferirem a cobertura.
+     *
+     * @return list<array{method: string, pattern: string}>
+     */
+    public function routes(): array
+    {
+        return array_map(
+            static fn(array $r): array => ['method' => $r['method'], 'pattern' => $r['pattern']],
+            $this->routes
+        );
     }
 
     public function dispatch(Request $request): Response
