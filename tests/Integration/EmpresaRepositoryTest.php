@@ -256,6 +256,20 @@ final class EmpresaRepositoryTest extends TestCase
         $this->repo->search(new EmpresaFiltro(sort: 'razao_social; DROP TABLE empresas'));
     }
 
+    public function testListOptionsIsSortedAndCanKeepOnlyActive(): void
+    {
+        $this->repo->create($this->dados(razao: 'Beta', cnpj: '11444777000161'));
+        $this->repo->create($this->dados(razao: 'Alfa'));
+        $this->repo->create($this->dados(razao: 'Inativa', cnpj: '45723174000110', ativo: false));
+
+        $all = $this->repo->listOptions();
+        $active = $this->repo->listOptions(true);
+
+        $this->assertSame(['Alfa', 'Beta', 'Inativa'], array_column($all, 'nome'));
+        $this->assertSame(['Alfa', 'Beta'], array_column($active, 'nome'));
+        $this->assertIsInt($all[0]['id']);
+    }
+
     public function testResponsavelIsPersisted(): void
     {
         $userId = $this->usuario();

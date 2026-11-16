@@ -33,3 +33,15 @@ function phone_mask(string $phone): string
 
     return "({$m[1]}) {$m[2]}-{$m[3]}";
 }
+
+/** 1234.5 → R$ 1.234,50; sem valor, um traço. */
+function money_br(?string $value): string
+{
+    return $value === null ? '—' : 'R$ ' . number_format((float) $value, 2, ',', '.');
+}
+
+/** Data no formato brasileiro (d/m/Y por padrão); sem data, um traço. */
+function date_br(?DateTimeInterface $date, string $format = 'd/m/Y'): string
+{
+    return $date === null ? '—' : $date->format($format);
+}

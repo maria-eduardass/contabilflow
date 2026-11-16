@@ -11,8 +11,8 @@ use LogicException;
 /**
  * Validação no servidor, campo a campo.
  *
- * Regras: required, email, maxLength:N, in:a,b,c, date, decimal:casas[,inteiros],
- * cnpj, whatsapp.
+ * Regras: required, email, maxLength:N, in:a,b,c, date, month (AAAA-MM, devolve
+ * o dia 01 como AAAA-MM-01), decimal:casas[,inteiros], cnpj, whatsapp.
  *
  * Por quê:
  * - Só os campos listados em $rules entram em `data` (whitelist): um campo
@@ -78,6 +78,9 @@ final class Validator
             'date' => $this->isDate($value)
                 ? [null, $value]
                 : ['Data inválida (use AAAA-MM-DD)', $value],
+            'month' => preg_match('/^(\d{4})-(0[1-9]|1[0-2])$/', $value, $m) === 1
+                ? [null, "{$m[1]}-{$m[2]}-01"]
+                : ['Mês inválido (use AAAA-MM)', $value],
             'decimal' => $this->decimal($value, (string) $arg),
             'cnpj' => ($cnpj = Cnpj::normalize($value)) !== null
                 ? [null, $cnpj]

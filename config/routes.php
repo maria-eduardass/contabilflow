@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 use ContabilFlow\Controllers\AuthController;
 use ContabilFlow\Controllers\EmpresaController;
+use ContabilFlow\Controllers\ObrigacaoController;
 use ContabilFlow\Core\Response;
 use ContabilFlow\Core\Router;
 
 // Por quê: todas as rotas ficam num só lugar, fora do index.php. Cada tarefa
 // seguinte registra as suas aqui. Vale a primeira rota que casar, então
 // /empresas/nova vem antes de /empresas/{id}.
-return static function (Router $router, AuthController $auth, EmpresaController $empresas): void {
+return static function (
+    Router $router,
+    AuthController $auth,
+    EmpresaController $empresas,
+    ObrigacaoController $obrigacoes
+): void {
     $router->get('/', static fn() => Response::redirect('/empresas'));
 
     $router->get('/login', $auth->showLogin(...));
@@ -24,4 +30,13 @@ return static function (Router $router, AuthController $auth, EmpresaController 
     $router->get('/empresas/{id:[0-9]+}/editar', $empresas->edit(...));
     $router->put('/empresas/{id:[0-9]+}', $empresas->update(...));
     $router->delete('/empresas/{id:[0-9]+}', $empresas->destroy(...));
+
+    $router->get('/obrigacoes', $obrigacoes->index(...));
+    $router->get('/obrigacoes/nova', $obrigacoes->create(...));
+    $router->post('/obrigacoes', $obrigacoes->store(...));
+    $router->get('/obrigacoes/{id:[0-9]+}', $obrigacoes->show(...));
+    $router->get('/obrigacoes/{id:[0-9]+}/editar', $obrigacoes->edit(...));
+    $router->put('/obrigacoes/{id:[0-9]+}', $obrigacoes->update(...));
+    $router->patch('/obrigacoes/{id:[0-9]+}/status', $obrigacoes->changeStatus(...));
+    $router->delete('/obrigacoes/{id:[0-9]+}', $obrigacoes->destroy(...));
 };

@@ -67,6 +67,20 @@ final class EmpresaRepository implements EmpresaRepositoryInterface
         return new Page($items, $total, $page, EmpresaFiltro::PER_PAGE);
     }
 
+    public function listOptions(bool $apenasAtivas = false): array
+    {
+        $rows = $this->db->pdo()->query(
+            'SELECT id, razao_social FROM empresas' . ($apenasAtivas ? ' WHERE ativo = 1' : '')
+            . ' ORDER BY razao_social, id'
+        );
+        $options = [];
+        foreach ($rows === false ? [] : $rows->fetchAll() as $row) {
+            $options[] = ['id' => (int) $row['id'], 'nome' => (string) $row['razao_social']];
+        }
+
+        return $options;
+    }
+
     public function create(EmpresaDados $dados): int
     {
         $pdo = $this->db->pdo();

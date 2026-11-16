@@ -10,9 +10,13 @@ use ContabilFlow\Core\Request;
 use ContabilFlow\Core\Response;
 use ContabilFlow\Core\Session;
 use ContabilFlow\Core\View;
+use ContabilFlow\Services\SemaforoService;
+use ContabilFlow\Tests\Support\FixedClock;
 use ContabilFlow\Tests\Support\InMemoryEmpresaRepository;
+use ContabilFlow\Tests\Support\InMemoryObrigacaoRepository;
 use ContabilFlow\Tests\Support\InMemoryUserRepository;
 use ContabilFlow\Validation\Validator;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class EmpresaControllerTest extends TestCase
@@ -24,12 +28,14 @@ final class EmpresaControllerTest extends TestCase
     private array $sessionData = ['user_id' => 1, 'perfil' => 'contador', 'nome' => 'Ana'];
     private Session $session;
     private InMemoryEmpresaRepository $empresas;
+    private InMemoryObrigacaoRepository $obrigacoes;
     private EmpresaController $controller;
 
     protected function setUp(): void
     {
         $this->session = new Session($this->sessionData);
         $this->empresas = new InMemoryEmpresaRepository();
+        $this->obrigacoes = new InMemoryObrigacaoRepository($this->empresas);
         $users = new InMemoryUserRepository();
         $users->add(1, 'ana@x.com', 'h');
         $users->add(2, 'inativo@x.com', 'h', 'contador', false);
@@ -40,7 +46,9 @@ final class EmpresaControllerTest extends TestCase
             new View(__DIR__ . '/../../views'),
             $this->session,
             new Csrf($this->session),
-            new Validator()
+            new Validator(),
+            $this->obrigacoes,
+            new SemaforoService(new FixedClock(new DateTimeImmutable('2026-11-16 10:00:00')))
         );
     }
 
@@ -252,6 +260,31 @@ final class EmpresaControllerTest extends TestCase
         $this->assertStringContainsString('Padaria Alfa', $response->body);
         $this->assertStringContainsString('name="_method" value="DELETE"', $response->body);
         $this->assertStringContainsString('name="_csrf"', $response->body);
+    }
+
+    public function testShowListsTheCompanysGuidesWithBadgeAndLinkToCreateMore(): void
+    {
+        $id = $this->empresas->seed('Padaria Alfa', self::CNPJ_A);
+        $outra = $this->empresas->seed('Outra', self::CNPJ_B);
+        $this->obrigacoes->seed($id, 'DAS', '2026-10-01', '2026-11-10');
+        $this->obrigacoes->seed($outra, 'DARF');
+
+        $body = $this->controller->show(Request::create('GET', '/x'), ['id' => (string) $id])->body;
+
+        $this->assertStringContainsString('Vencida', $body);
+        $this->assertStringContainsString('/obrigacoes/1', $body);
+        $this->assertStringNotContainsString('/obrigacoes/2', $body);
+        $this->assertStringContainsString('/obrigacoes/nova?empresa_id=' . $id, $body);
+        $this->assertSame($id, $this->obrigacoes->lastFilter?->empresaId);
+    }
+
+    public function testShowWithoutGuidesShowsEmptyMessage(): void
+    {
+        $id = $this->empresas->seed('Padaria Alfa', self::CNPJ_A);
+
+        $body = $this->controller->show(Request::create('GET', '/x'), ['id' => (string) $id])->body;
+
+        $this->assertStringContainsString('Nenhuma guia cadastrada para esta empresa', $body);
     }
 
     public function testShowUnknownCompanyReturns404(): void

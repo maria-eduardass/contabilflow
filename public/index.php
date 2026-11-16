@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use ContabilFlow\Controllers\AuthController;
 use ContabilFlow\Controllers\EmpresaController;
+use ContabilFlow\Controllers\ObrigacaoController;
 use ContabilFlow\Core\AuthMiddleware;
 use ContabilFlow\Core\Csrf;
 use ContabilFlow\Core\CsrfMiddleware;
@@ -21,8 +22,10 @@ use ContabilFlow\Core\SessionMiddleware;
 use ContabilFlow\Core\SystemClock;
 use ContabilFlow\Core\View;
 use ContabilFlow\Models\EmpresaRepository;
+use ContabilFlow\Models\ObrigacaoRepository;
 use ContabilFlow\Models\UsuarioRepository;
 use ContabilFlow\Services\AuthService;
+use ContabilFlow\Services\SemaforoService;
 use ContabilFlow\Validation\Validator;
 
 // Ponto de entrada único. Por quê: o document root aponta para public/, então
@@ -55,10 +58,33 @@ $auth = new AuthController(
     $clock
 );
 
-$empresas = new EmpresaController(new EmpresaRepository($db), $users, $view, $session, $csrf, $validator);
+$empresaRepo = new EmpresaRepository($db);
+$obrigacaoRepo = new ObrigacaoRepository($db);
+$semaforo = new SemaforoService($clock);
+
+$empresas = new EmpresaController(
+    $empresaRepo,
+    $users,
+    $view,
+    $session,
+    $csrf,
+    $validator,
+    $obrigacaoRepo,
+    $semaforo
+);
+$obrigacoes = new ObrigacaoController(
+    $obrigacaoRepo,
+    $empresaRepo,
+    $semaforo,
+    $clock,
+    $view,
+    $session,
+    $csrf,
+    $validator
+);
 
 $router = new Router();
-(require $root . '/config/routes.php')($router, $auth, $empresas);
+(require $root . '/config/routes.php')($router, $auth, $empresas, $obrigacoes);
 
 // Ordem importa: a sessão expira antes de o CSRF olhar o token, e o login é
 // exigido antes de checar o perfil. Caminhos restritos a admin ficam neste mapa.

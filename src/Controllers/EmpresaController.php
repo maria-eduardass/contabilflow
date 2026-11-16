@@ -15,9 +15,14 @@ use ContabilFlow\Models\Empresa;
 use ContabilFlow\Models\EmpresaDados;
 use ContabilFlow\Models\EmpresaFiltro;
 use ContabilFlow\Models\EmpresaRepositoryInterface;
+use ContabilFlow\Models\Obrigacao;
+use ContabilFlow\Models\ObrigacaoFiltro;
+use ContabilFlow\Models\ObrigacaoRepositoryInterface;
 use ContabilFlow\Models\RecordNotFoundException;
 use ContabilFlow\Models\StaleVersionException;
+use ContabilFlow\Models\Semaforo;
 use ContabilFlow\Models\UserRepositoryInterface;
+use ContabilFlow\Services\SemaforoService;
 use ContabilFlow\Validation\Validator;
 
 /**
@@ -41,6 +46,8 @@ final class EmpresaController
         private Session $session,
         private Csrf $csrf,
         private Validator $validator,
+        private ObrigacaoRepositoryInterface $obrigacoes,
+        private SemaforoService $semaforo,
     ) {
     }
 
@@ -332,6 +339,8 @@ final class EmpresaController
             'empresa' => $empresa,
             'responsavel' => $responsavel,
             'message' => null,
+            'guias' => $this->obrigacoes->search(new ObrigacaoFiltro(empresaId: $empresa->id)),
+            'cor' => fn(Obrigacao $o): Semaforo => $this->semaforo->classificar($o),
         ];
     }
 

@@ -14,6 +14,7 @@
             <?php if (!empty($userName)): ?>
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/empresas">Empresas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/obrigacoes">Guias</a></li>
                 </ul>
                 <form method="post" action="/logout" class="d-flex align-items-center gap-2">
                     <?= $csrfField ?? '' ?>

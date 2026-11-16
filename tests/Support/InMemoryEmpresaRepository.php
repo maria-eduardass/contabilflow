@@ -44,6 +44,18 @@ final class InMemoryEmpresaRepository implements EmpresaRepositoryInterface
         return new Page($items, count($items), max(1, $filtro->page), EmpresaFiltro::PER_PAGE);
     }
 
+    public function listOptions(bool $apenasAtivas = false): array
+    {
+        $options = [];
+        foreach ($this->rows as $row) {
+            if (!$apenasAtivas || $row->ativo) {
+                $options[] = ['id' => $row->id, 'nome' => $row->razaoSocial];
+            }
+        }
+
+        return $options;
+    }
+
     public function create(EmpresaDados $dados): int
     {
         $this->assertCnpjFree($dados->cnpj, null);
